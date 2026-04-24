@@ -21,7 +21,7 @@ function createPlayer(name, headPos, direction, isBot) {
     alive: true,
     apple: null,
     wall: [],
-    waypoint: null,
+    path: [],
   };
 }
 
@@ -82,6 +82,7 @@ function tickGame(game) {
     game.p2.apple = spawnApple(game.p2.snake, []);
     game.p1.wall  = generateWall(game.p1.snake, game.p1.apple);
     game.p2.wall  = generateWall(game.p2.snake, game.p2.apple);
+    game.p2.path  = []; // new apple → recompute path from scratch
   }
 
   if (game.p1.score >= WIN_SCORE) {
@@ -254,7 +255,7 @@ function aStar(start, goal, snake, wall) {
     if (wallSet.has(`${x},${y}`)) return true;
     // Future body awareness: body segment i clears after i steps
     for (let i = 0; i < snake.length; i++) {
-      if (snake[i].x === x && snake[i].y === y && i >= step) return true;
+      if (snake[i].x === x && snake[i].y === y && i + step < snake.length) return true;
     }
     return false;
   }
@@ -286,73 +287,24 @@ function aStar(start, goal, snake, wall) {
   return null;
 }
 
-// ── Bot logic (Algorithms 9 + 10) ─────────────────────────────────────────────
+// ── Bot logic ─────────────────────────────────────────────────────────────────
 
 function getBotDirection(bot) {
-  const head = bot.snake[0];
-
-  // Manage waypoint: clear if reached
-  if (bot.waypoint && head.x === bot.waypoint.x && head.y === bot.waypoint.y) {
-    bot.waypoint = null;
+  if (bot.path.length === 0) {
+    bot.path = aStar(bot.snake[0], bot.apple, bot.snake, bot.wall) || [];
   }
 
-  // 20% chance to pick a waypoint if we don't have one
-  if (!bot.waypoint && Math.random() < 0.20) {
-    bot.waypoint = findWaypoint(head, bot.apple, bot.snake, bot.wall);
-  }
-
-  const target = bot.waypoint || bot.apple;
-  const path = aStar(head, target, bot.snake, bot.wall);
-
-  if (path && path.length > 0) {
-    const next = path[0];
-    const ddx = next.x - head.x, ddy = next.y - head.y;
-    let dir = ddx === 1 ? 'right' : ddx === -1 ? 'left' : ddy === 1 ? 'down' : 'up';
-
-    // 20% chance of 2nd-best move when heading directly to apple
-    if (!bot.waypoint && Math.random() < 0.20) {
-      const alt = secondBestMove(head, bot.apple, bot.snake, bot.wall, dir);
-      if (alt) dir = alt;
-    }
-
-    if (dir !== OPPOSITE[bot.direction]) return dir;
+  if (bot.path.length > 0) {
+    const next = bot.path.shift();
+    return dirBetween(bot.snake[0], next);
   }
 
   return safeMove(bot);
 }
 
-function findWaypoint(head, apple, snake, wall) {
-  for (let attempt = 0; attempt < 12; attempt++) {
-    const dist = 3 + Math.floor(Math.random() * 4);
-    const angle = Math.random() * Math.PI * 2;
-    const wx = Math.round(apple.x + Math.cos(angle) * dist);
-    const wy = Math.round(apple.y + Math.sin(angle) * dist);
-    if (wx < 0 || wx >= COLS || wy < 0 || wy >= ROWS) continue;
-    const taken = new Set([...snake.map(s => `${s.x},${s.y}`), ...wall.map(w => `${w.x},${w.y}`)]);
-    if (taken.has(`${wx},${wy}`)) continue;
-    if (aStar(head, { x: wx, y: wy }, snake, wall) && aStar({ x: wx, y: wy }, apple, snake, wall)) {
-      return { x: wx, y: wy };
-    }
-  }
-  return null;
-}
-
-function secondBestMove(head, apple, snake, wall, bestDir) {
-  const DIR_VEC = { up:{x:0,y:-1}, down:{x:0,y:1}, left:{x:-1,y:0}, right:{x:1,y:0} };
-  const bodySet = new Set(snake.slice(0, -1).map(s => `${s.x},${s.y}`));
-  const wallSet = new Set(wall.map(w => `${w.x},${w.y}`));
-  let bestAlt = null, bestDist = Infinity;
-
-  for (const dir of ['up','down','left','right']) {
-    if (dir === bestDir || dir === OPPOSITE[bestDir]) continue;
-    const v = DIR_VEC[dir];
-    const nx = head.x + v.x, ny = head.y + v.y;
-    if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) continue;
-    if (bodySet.has(`${nx},${ny}`) || wallSet.has(`${nx},${ny}`)) continue;
-    const dist = Math.abs(nx - apple.x) + Math.abs(ny - apple.y);
-    if (dist < bestDist) { bestDist = dist; bestAlt = dir; }
-  }
-  return bestAlt;
+function dirBetween(from, to) {
+  const ddx = to.x - from.x, ddy = to.y - from.y;
+  return ddx === 1 ? 'right' : ddx === -1 ? 'left' : ddy === 1 ? 'down' : 'up';
 }
 
 function safeMove(bot) {
