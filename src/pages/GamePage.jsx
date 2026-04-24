@@ -1,29 +1,18 @@
-import { useRef, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useRef, useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import './GamePage.css';
 
 const CELL = 24;
 const COLS = 30;
-const W = CELL * COLS; // 330px
+const W = CELL * COLS;
 
 const SNAKE_COLORS = {
   purple: { body: '#6B63C8', head: '#9F99E8' },
   teal:   { body: '#0F6E56', head: '#2DCB96' },
 };
 
-const INITIAL_P1 = {
-  score: 0,
-  snake: [{x:4,y:14},{x:3,y:14},{x:2,y:14}],
-  apple: { x: 15, y: 14 },
-  wall: [],
-};
-
-const INITIAL_P2 = {
-  score: 0,
-  snake: [{x:25,y:14},{x:26,y:14},{x:27,y:14}],
-  apple: { x: 15, y: 14 },
-  wall: [],
-};
+// ── Canvas drawing ────────────────────────────────────────────────────────────
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -39,16 +28,15 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function drawBoard(ctx, state, colorKey) {
-  const { snake, apple, wall } = state;
+function drawBoard(ctx, playerState, colorKey) {
+  if (!playerState) return;
+  const { snake, apple, wall } = playerState;
   const colors = SNAKE_COLORS[colorKey];
   const pad = 1;
 
-  // Background
   ctx.fillStyle = '#111120';
   ctx.fillRect(0, 0, W, W);
 
-  // Grid lines
   ctx.strokeStyle = 'rgba(255,255,255,0.12)';
   ctx.lineWidth = 0.5;
   for (let i = 0; i <= COLS; i++) {
@@ -57,38 +45,28 @@ function drawBoard(ctx, state, colorKey) {
   }
 
   // Wall
-  wall.forEach(({ x, y }) => {
+  (wall || []).forEach(({ x, y }) => {
     const px = x * CELL + pad, py = y * CELL + pad, sz = CELL - pad * 2;
-    roundRect(ctx, px, py, sz, sz, 2);
-    ctx.fillStyle = '#BA7517';
-    ctx.fill();
-    ctx.strokeStyle = '#EF9F27';
-    ctx.lineWidth = 1;
-    ctx.stroke();
+    roundRect(ctx, px, py, sz, sz, 3);
+    ctx.fillStyle = '#BA7517'; ctx.fill();
+    ctx.strokeStyle = '#EF9F27'; ctx.lineWidth = 1; ctx.stroke();
   });
 
   // Apple
-  const acx = apple.x * CELL + CELL / 2;
-  const acy = apple.y * CELL + CELL / 2;
-  const ar = CELL / 2 - 1.5;
-  ctx.beginPath();
-  ctx.arc(acx, acy + 1, ar, 0, Math.PI * 2);
-  ctx.fillStyle = '#E24B4A';
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(acx, acy - ar + 2);
-  ctx.lineTo(acx + 1, acy - ar - 2);
-  ctx.strokeStyle = '#2DCB96';
-  ctx.lineWidth = 1.2;
-  ctx.lineCap = 'round';
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.ellipse(acx + 3, acy - ar, 2.5, 1.2, -0.4, 0, Math.PI * 2);
-  ctx.fillStyle = '#2DCB96';
-  ctx.fill();
+  if (apple) {
+    const acx = apple.x * CELL + CELL / 2;
+    const acy = apple.y * CELL + CELL / 2;
+    const ar = CELL / 2 - 2;
+    ctx.beginPath(); ctx.arc(acx, acy + 1, ar, 0, Math.PI * 2);
+    ctx.fillStyle = '#E24B4A'; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(acx, acy - ar + 2); ctx.lineTo(acx + 2, acy - ar - 4);
+    ctx.strokeStyle = '#2DCB96'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(acx + 5, acy - ar - 1, 4, 2, -0.4, 0, Math.PI * 2);
+    ctx.fillStyle = '#2DCB96'; ctx.fill();
+  }
 
-  // Snake — draw tail first so head renders on top
-  const len = snake.length;
+  // Snake
+  const len = (snake || []).length;
   for (let i = len - 1; i >= 0; i--) {
     const seg = snake[i];
     const isHead = i === 0;
@@ -96,49 +74,49 @@ function drawBoard(ctx, state, colorKey) {
     const px = seg.x * CELL + pad, py = seg.y * CELL + pad, sz = CELL - pad * 2;
 
     ctx.globalAlpha = opacity;
-    roundRect(ctx, px, py, sz, sz, 3);
+    roundRect(ctx, px, py, sz, sz, 4);
     ctx.fillStyle = isHead ? colors.head : colors.body;
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    // Eyes on head
     if (isHead && snake[1]) {
       const next = snake[1];
-      const dx = seg.x - next.x;
-      const dy = seg.y - next.y;
-      const cx = seg.x * CELL + CELL / 2;
-      const cy = seg.y * CELL + CELL / 2;
+      const ddx = seg.x - next.x, ddy = seg.y - next.y;
+      const cx = seg.x * CELL + CELL / 2, cy = seg.y * CELL + CELL / 2;
       let e1x, e1y, e2x, e2y;
-      if      (dx ===  1) { e1x = cx+2; e1y = cy-2; e2x = cx+2; e2y = cy+2; }
-      else if (dx === -1) { e1x = cx-2; e1y = cy-2; e2x = cx-2; e2y = cy+2; }
-      else if (dy ===  1) { e1x = cx-2; e1y = cy+2; e2x = cx+2; e2y = cy+2; }
-      else                { e1x = cx-2; e1y = cy-2; e2x = cx+2; e2y = cy-2; }
+      const eo = CELL * 0.18, ef = CELL * 0.2;
+      if      (ddx ===  1) { e1x=cx+ef; e1y=cy-eo; e2x=cx+ef; e2y=cy+eo; }
+      else if (ddx === -1) { e1x=cx-ef; e1y=cy-eo; e2x=cx-ef; e2y=cy+eo; }
+      else if (ddy ===  1) { e1x=cx-eo; e1y=cy+ef; e2x=cx+eo; e2y=cy+ef; }
+      else                 { e1x=cx-eo; e1y=cy-ef; e2x=cx+eo; e2y=cy-ef; }
       ctx.fillStyle = '#0a0a14';
-      ctx.beginPath(); ctx.arc(e1x, e1y, 1.2, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(e2x, e2y, 1.2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(e1x, e1y, CELL * 0.1, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(e2x, e2y, CELL * 0.1, 0, Math.PI * 2); ctx.fill();
     }
   }
 }
 
-function GameBoard({ playerName, colorKey, score, state }) {
+// ── GameBoard component ───────────────────────────────────────────────────────
+
+function GameBoard({ playerState, colorKey }) {
   const canvasRef = useRef(null);
   const dotColor = colorKey === 'purple' ? '#9F99E8' : '#2DCB96';
 
   useEffect(() => {
     const ctx = canvasRef.current?.getContext('2d');
-    if (ctx) drawBoard(ctx, state, colorKey);
-  }, [state, colorKey]);
+    if (ctx) drawBoard(ctx, playerState, colorKey);
+  }, [playerState, colorKey]);
 
   return (
     <div className="board-panel">
       <div className="board-meta">
         <div className="board-player">
           <span className="player-dot" style={{ background: dotColor }} />
-          <span className="player-name">{playerName}</span>
+          <span className="player-name">{playerState?.name ?? '...'}</span>
         </div>
         <div className="board-score">
           <span className="score-label">SCORE</span>
-          <span className="score-value" style={{ color: dotColor }}>{score}</span>
+          <span className="score-value" style={{ color: dotColor }}>{playerState?.score ?? 0}</span>
         </div>
       </div>
       <canvas ref={canvasRef} width={W} height={W} className="game-canvas" />
@@ -146,18 +124,10 @@ function GameBoard({ playerName, colorKey, score, state }) {
   );
 }
 
-function makeEndState(p1Name, p2Name) {
-  return {
-    winner: p1Name,
-    players: [
-      { name: p1Name, colorKey: 'purple', score: 30 },
-      { name: p2Name, colorKey: 'teal',   score: 21 },
-    ],
-  };
-}
+// ── End game overlay ──────────────────────────────────────────────────────────
 
-function EndGameOverlay({ endState }) {
-  const { winner, players } = endState;
+function EndGameOverlay({ gameState, onPlayAgain, onLobby }) {
+  const p1Color = '#9F99E8', p2Color = '#2DCB96';
   return (
     <div className="endgame-backdrop">
       <div className="endgame-card">
@@ -169,40 +139,70 @@ function EndGameOverlay({ endState }) {
             </svg>
           </div>
           <p className="winner-label">WINNER</p>
-          <p className="winner-name">{winner}</p>
+          <p className="winner-name">{gameState.winner ?? 'Draw'}</p>
         </div>
 
         <div className="endgame-body">
           <div className="scores-row">
-            {players.map(({ name, colorKey, score }) => {
-              const color = colorKey === 'purple' ? '#9F99E8' : '#2DCB96';
-              return (
-                <div className="score-col" key={name}>
-                  <div className="score-col-player">
-                    <span className="player-dot" style={{ background: color }} />
-                    <span className="score-col-name">{name}</span>
-                  </div>
-                  <span className="score-col-value" style={{ color }}>{score}</span>
-                  <span className="score-col-label">FINAL SCORE</span>
-                </div>
-              );
-            })}
+            <div className="score-col">
+              <div className="score-col-player">
+                <span className="player-dot" style={{ background: p1Color }} />
+                <span className="score-col-name">{gameState.p1.name}</span>
+              </div>
+              <span className="score-col-value" style={{ color: p1Color }}>{gameState.p1.score}</span>
+              <span className="score-col-label">FINAL SCORE</span>
+            </div>
+            <div className="score-col">
+              <div className="score-col-player">
+                <span className="player-dot" style={{ background: p2Color }} />
+                <span className="score-col-name">{gameState.p2.name}</span>
+              </div>
+              <span className="score-col-value" style={{ color: p2Color }}>{gameState.p2.score}</span>
+              <span className="score-col-label">FINAL SCORE</span>
+            </div>
           </div>
-
-          <button className="play-again-btn">Play again</button>
-          <button className="back-lobby-btn">Back to lobby</button>
+          <button className="play-again-btn" onClick={onPlayAgain}>Play again</button>
+          <button className="back-lobby-btn" onClick={onLobby}>Back to lobby</button>
         </div>
       </div>
     </div>
   );
 }
 
-function GamePage() {
+// ── GamePage ──────────────────────────────────────────────────────────────────
+
+export default function GamePage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const username = location.state?.username || 'Player';
-  const p2Name = 'Bot';
-  const gameOver = false;
-  const endState = makeEndState(username, p2Name);
+
+  const [gameState, setGameState] = useState(null);
+  const socketRef = useRef(null);
+
+  // Connect socket and join game
+  useEffect(() => {
+    const socket = io('http://localhost:3001');
+    socketRef.current = socket;
+    socket.emit('join_bot_game', { username });
+    socket.on('game_state', (state) => setGameState(state));
+    return () => socket.disconnect();
+  }, [username]);
+
+  // Keyboard input
+  useEffect(() => {
+    const keyMap = { ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right' };
+    const onKey = (e) => {
+      const dir = keyMap[e.key];
+      if (dir) { e.preventDefault(); socketRef.current?.emit('player_move', { direction: dir }); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const handlePlayAgain = () => socketRef.current?.emit('play_again');
+  const handleLobby = () => navigate('/lobby', { state: { username } });
+
+  const gameOver = gameState?.gameOver ?? false;
 
   return (
     <div className="game-container">
@@ -227,35 +227,27 @@ function GamePage() {
 
       <main className={`game-main${gameOver ? ' game-main--dimmed' : ''}`}>
         <div className="boards-row">
-          <GameBoard playerName={username} colorKey="purple" score={INITIAL_P1.score} state={INITIAL_P1} />
-          <GameBoard playerName={p2Name}   colorKey="teal"   score={INITIAL_P2.score} state={INITIAL_P2} />
+          <GameBoard playerState={gameState?.p1} colorKey="purple" />
+          <GameBoard playerState={gameState?.p2} colorKey="teal" />
         </div>
 
         <div className="legend">
-          <div className="legend-item">
-            <span className="legend-swatch legend-empty" />
-            <span>empty</span>
-          </div>
-          <div className="legend-item">
-            <span className="legend-swatch legend-snake" />
-            <span>your snake</span>
-          </div>
-          <div className="legend-item">
-            <span className="legend-swatch legend-apple" />
-            <span>apple</span>
-          </div>
-          <div className="legend-item">
-            <span className="legend-swatch legend-wall" />
-            <span>wall</span>
-          </div>
+          <div className="legend-item"><span className="legend-swatch legend-empty" /><span>empty</span></div>
+          <div className="legend-item"><span className="legend-swatch legend-snake" /><span>your snake</span></div>
+          <div className="legend-item"><span className="legend-swatch legend-apple" /><span>apple</span></div>
+          <div className="legend-item"><span className="legend-swatch legend-wall"  /><span>wall</span></div>
         </div>
 
         <p className="credit">created by David Kaplun</p>
       </main>
 
-      {gameOver && <EndGameOverlay endState={endState} />}
+      {gameOver && gameState && (
+        <EndGameOverlay
+          gameState={gameState}
+          onPlayAgain={handlePlayAgain}
+          onLobby={handleLobby}
+        />
+      )}
     </div>
   );
 }
-
-export default GamePage;
