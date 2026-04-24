@@ -74,6 +74,16 @@ function tickGame(game) {
   movePlayer(game.p1);
   movePlayer(game.p2);
 
+  // When either player eats an apple, both boards get a new apple + wall
+  if (game.p1._ateApple || game.p2._ateApple) {
+    game.p1._ateApple = false;
+    game.p2._ateApple = false;
+    game.p1.apple = spawnApple(game.p1.snake, []);
+    game.p2.apple = spawnApple(game.p2.snake, []);
+    game.p1.wall  = generateWall(game.p1.snake, game.p1.apple);
+    game.p2.wall  = generateWall(game.p2.snake, game.p2.apple);
+  }
+
   if (game.p1.score >= WIN_SCORE) {
     game.gameOver = true; game.winner = game.p1.name;
   } else if (game.p2.score >= WIN_SCORE) {
@@ -116,8 +126,7 @@ function movePlayer(player) {
   } else {
     player.score++;
     player.waypoint = null;
-    player.apple = spawnApple(player.snake, player.wall);
-    player.wall  = generateWall(player.snake, player.apple);
+    player._ateApple = true;
   }
 }
 
