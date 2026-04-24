@@ -1,0 +1,246 @@
+.lobby-container {
+  min-height: 100vh;
+  background: #0a0a14;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.bg-orb-left {
+  position: absolute;
+  top: -60px;
+  left: -60px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: rgba(29, 158, 117, 0.08);
+  pointer-events: none;
+}
+
+.bg-orb-right {
+  position: absolute;
+  bottom: -40px;
+  right: -40px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: rgba(127, 119, 221, 0.1);
+  pointer-events: none;
+}
+
+.bg-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.lobby-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.logo-text {
+  font-size: 22px;
+  font-weight: 500;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.35);
+  margin: 0 0 18px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.username-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(29, 158, 117, 0.12);
+  border: 0.5px solid rgba(29, 158, 117, 0.35);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+  margin-bottom: 28px;
+}
+
+.username-badge strong {
+  color: #2DCB96;
+  font-weight: 600;
+}
+
+.badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #1D9E75;
+  flex-shrink: 0;
+}
+
+.mode-label {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0 0 16px;
+}
+
+.mode-cards {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.mode-card {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  padding: 18px 20px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  overflow: hidden;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.mode-card--purple {
+  border: 0.5px solid rgba(127, 119, 221, 0.35);
+}
+
+.mode-card--teal {
+  border: 0.5px solid rgba(29, 158, 117, 0.35);
+}
+
+.mode-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.mode-card:active {
+  transform: scale(0.99);
+}
+
+.card-accent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3.5px;
+  border-radius: 12px 0 0 12px;
+}
+
+.card-accent--purple {
+  background: #7F77DD;
+}
+
+.card-accent--teal {
+  background: #1D9E75;
+}
+
+.card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.card-icon--purple {
+  background: rgba(127, 119, 221, 0.15);
+}
+
+.card-icon--teal {
+  background: rgba(29, 158, 117, 0.15);
+}
+
+.card-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.card-sub {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.card-chevron {
+  flex-shrink: 0;
+}
+
+.how-to-play-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 0.5px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 7px 16px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  font-family: inherit;
+  margin-bottom: 20px;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.how-to-play-btn:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.change-username-btn {
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  font-family: inherit;
+  margin-bottom: 10px;
+  transition: color 0.2s;
+}
+
+.change-username-btn:hover {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.credit {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.28);
+  margin: 0;
+  letter-spacing: 0.3px;
+}
