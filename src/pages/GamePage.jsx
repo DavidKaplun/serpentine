@@ -160,7 +160,58 @@ function GameBoard({ playerName, colorKey, score, state }) {
   );
 }
 
+const END_STATE = {
+  winner: 'David',
+  players: [
+    { name: 'David', colorKey: 'purple', score: 30 },
+    { name: 'Alex',  colorKey: 'teal',   score: 21 },
+  ],
+};
+
+function EndGameOverlay() {
+  const { winner, players } = END_STATE;
+  return (
+    <div className="endgame-backdrop">
+      <div className="endgame-card">
+        <div className="endgame-header">
+          <div className="winner-icon">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M11 2l2.39 4.84 5.34.78-3.87 3.77.91 5.32L11 14.27l-4.77 2.44.91-5.32L3.27 7.62l5.34-.78L11 2z"
+                fill="white" opacity="0.95"/>
+            </svg>
+          </div>
+          <p className="winner-label">WINNER</p>
+          <p className="winner-name">{winner}</p>
+        </div>
+
+        <div className="endgame-body">
+          <div className="scores-row">
+            {players.map(({ name, colorKey, score }) => {
+              const color = colorKey === 'purple' ? '#9F99E8' : '#2DCB96';
+              return (
+                <div className="score-col" key={name}>
+                  <div className="score-col-player">
+                    <span className="player-dot" style={{ background: color }} />
+                    <span className="score-col-name">{name}</span>
+                  </div>
+                  <span className="score-col-value" style={{ color }}>{score}</span>
+                  <span className="score-col-label">FINAL SCORE</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <button className="play-again-btn">Play again</button>
+          <button className="back-lobby-btn">Back to lobby</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function GamePage() {
+  const gameOver = true;
+
   return (
     <div className="game-container">
       <header className="game-header">
@@ -176,13 +227,13 @@ function GamePage() {
           </svg>
           <span className="header-logo-text">SERPENTINE</span>
         </div>
-        <div className="live-badge">
-          <span className="live-dot" />
-          LIVE
-        </div>
+        {gameOver
+          ? <div className="ended-badge">ENDED</div>
+          : <div className="live-badge"><span className="live-dot" />LIVE</div>
+        }
       </header>
 
-      <main className="game-main">
+      <main className={`game-main${gameOver ? ' game-main--dimmed' : ''}`}>
         <div className="boards-row">
           <GameBoard playerName="David" colorKey="purple" score={P1_STATE.score} state={P1_STATE} />
           <GameBoard playerName="Alex"  colorKey="teal"   score={P2_STATE.score} state={P2_STATE} />
@@ -209,6 +260,8 @@ function GamePage() {
 
         <p className="credit">created by David Kaplun</p>
       </main>
+
+      {gameOver && <EndGameOverlay />}
     </div>
   );
 }
