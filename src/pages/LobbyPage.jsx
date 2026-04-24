@@ -1,13 +1,73 @@
+import { useState } from 'react';
 import './LobbyPage.css';
+
+function HowToPlayOverlay({ onClose }) {
+  return (
+    <div className="overlay-backdrop" onClick={onClose}>
+      <div className="overlay-card" onClick={(e) => e.stopPropagation()}>
+        <div className="overlay-header">
+          <span className="overlay-title">How to play</span>
+          <button className="overlay-close" onClick={onClose}>
+            <svg width="17" height="17" viewBox="0 0 14 14" fill="none">
+              <path d="M2 2l10 10M12 2L2 12" stroke="rgba(255,255,255,0.6)" strokeWidth="1.6" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <div className="overlay-section">
+          <p className="overlay-section-title">CONTROLS</p>
+          <p className="overlay-section-body">
+            Use the{' '}
+            <span className="key">↑</span>{' '}
+            <span className="key">↓</span>{' '}
+            <span className="key">←</span>{' '}
+            <span className="key">→</span>{' '}
+            arrow keys to control your snake.
+          </p>
+        </div>
+
+        <div className="overlay-divider" />
+
+        <div className="overlay-section">
+          <p className="overlay-section-title">OBJECTIVE</p>
+          <p className="overlay-section-body">
+            Collect apples to grow your snake and increase your score. The first player to reach a score of <span className="highlight-teal">30</span> wins.
+          </p>
+        </div>
+
+        <div className="overlay-divider" />
+
+        <div className="overlay-section">
+          <p className="overlay-section-title">WALLS</p>
+          <p className="overlay-section-body">
+            Each apple spawns with a wall that blocks your direct path to it. Navigate around it — hitting the wall ends your game.
+          </p>
+        </div>
+
+        <div className="overlay-divider" />
+
+        <div className="overlay-section">
+          <p className="overlay-section-title">GAME OVER</p>
+          <p className="overlay-section-body">
+            Hitting a wall, your own body, or the edge of the board ends the game immediately.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function LobbyPage() {
   const username = 'Alex';
+  const [showRules, setShowRules] = useState(false);
 
   return (
     <div className="lobby-container">
       <div className="bg-orb-left" />
       <div className="bg-orb-right" />
       <div className="bg-grid" />
+
+      {showRules && <HowToPlayOverlay onClose={() => setShowRules(false)} />}
 
       <div className="lobby-content">
         <div className="logo-row">
@@ -73,7 +133,7 @@ function LobbyPage() {
           </button>
         </div>
 
-        <button className="how-to-play-btn">
+        <button className="how-to-play-btn" onClick={() => setShowRules(true)}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <circle cx="7" cy="7" r="6" stroke="rgba(255,255,255,0.35)" strokeWidth="1.2"/>
             <path d="M7 6.5v4" stroke="rgba(255,255,255,0.35)" strokeWidth="1.2" strokeLinecap="round"/>

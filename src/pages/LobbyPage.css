@@ -244,3 +244,99 @@
   margin: 0;
   letter-spacing: 0.3px;
 }
+
+/* ── How to Play Overlay ── */
+
+.overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 4, 14, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 2rem;
+}
+
+.overlay-card {
+  background: #14141f;
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 17px;
+  width: 100%;
+  max-width: 504px;
+  overflow: hidden;
+}
+
+.overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 26px 22px;
+}
+
+.overlay-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.overlay-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.overlay-close:hover {
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.overlay-section {
+  padding: 19px 26px;
+}
+
+.overlay-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  color: #2DCB96;
+  margin: 0 0 12px;
+}
+
+.overlay-section-body {
+  font-size: 17px;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.overlay-divider {
+  height: 0.5px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 0 26px;
+}
+
+.key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 29px;
+  height: 29px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 0.5px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  vertical-align: middle;
+}
+
+.highlight-teal {
+  color: #2DCB96;
+  font-weight: 600;
+}
