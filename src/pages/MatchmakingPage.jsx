@@ -1,7 +1,10 @@
+import { useNavigate, useLocation } from 'react-router-dom';
 import './MatchmakingPage.css';
 
 function MatchmakingPage() {
-  const username = 'Alex';
+  const navigate = useNavigate();
+  const location = useLocation();
+  const username = location.state?.username || 'Player';
 
   return (
     <div className="mm-container">
@@ -53,7 +56,7 @@ function MatchmakingPage() {
           Playing as <strong>{username}</strong>
         </div>
 
-        <button className="cancel-btn">← cancel</button>
+        <button className="cancel-btn" onClick={() => navigate('/lobby', { state: { username } })}>← cancel</button>
 
         <p className="credit">created by David Kaplun</p>
       </div>

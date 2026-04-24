@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './LobbyPage.css';
 
 function HowToPlayOverlay({ onClose }) {
@@ -58,7 +59,9 @@ function HowToPlayOverlay({ onClose }) {
 }
 
 function LobbyPage() {
-  const username = 'Alex';
+  const navigate = useNavigate();
+  const location = useLocation();
+  const username = location.state?.username || 'Player';
   const [showRules, setShowRules] = useState(false);
 
   return (
@@ -93,7 +96,7 @@ function LobbyPage() {
         <p className="mode-label">Choose your game mode</p>
 
         <div className="mode-cards">
-          <button className="mode-card mode-card--purple">
+          <button className="mode-card mode-card--purple" onClick={() => navigate('/matchmaking', { state: { username } })}>
             <div className="card-accent card-accent--purple" />
             <div className="card-icon card-icon--purple">
               <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -112,7 +115,7 @@ function LobbyPage() {
             </svg>
           </button>
 
-          <button className="mode-card mode-card--teal">
+          <button className="mode-card mode-card--teal" onClick={() => navigate('/game', { state: { username, mode: 'bot' } })}>
             <div className="card-accent card-accent--teal" />
             <div className="card-icon card-icon--teal">
               <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -142,7 +145,7 @@ function LobbyPage() {
           how to play
         </button>
 
-        <button className="change-username-btn">← change username</button>
+        <button className="change-username-btn" onClick={() => navigate('/')}>← change username</button>
         <p className="credit">created by David Kaplun</p>
       </div>
     </div>

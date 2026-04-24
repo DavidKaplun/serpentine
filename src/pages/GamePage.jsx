@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import './GamePage.css';
 
 const CELL = 24;
@@ -10,33 +11,18 @@ const SNAKE_COLORS = {
   teal:   { body: '#0F6E56', head: '#2DCB96' },
 };
 
-const P1_STATE = {
-  score: 47,
-  snake: [
-    {x:13,y:14},{x:12,y:14},{x:11,y:14},{x:10,y:14},{x:9,y:14},
-    {x:8,y:14},{x:7,y:14},{x:6,y:14},{x:5,y:14},
-    {x:5,y:15},{x:5,y:16},{x:5,y:17},
-    {x:6,y:17},{x:7,y:17},{x:8,y:17},
-    {x:8,y:16},{x:8,y:15},
-  ],
-  apple: { x: 16, y: 9 },
-  wall: [
-    {x:14,y:7},{x:14,y:8},{x:14,y:9},{x:14,y:10},{x:14,y:11},
-    {x:15,y:11},{x:16,y:11},
-  ],
+const INITIAL_P1 = {
+  score: 0,
+  snake: [{x:4,y:14},{x:3,y:14},{x:2,y:14}],
+  apple: { x: 15, y: 14 },
+  wall: [],
 };
 
-const P2_STATE = {
-  score: 31,
-  snake: [
-    {x:19,y:10},{x:19,y:11},{x:19,y:12},{x:19,y:13},
-    {x:18,y:13},{x:17,y:13},{x:16,y:13},
-    {x:16,y:14},{x:16,y:15},
-  ],
-  apple: { x: 9, y: 17 },
-  wall: [
-    {x:11,y:16},{x:12,y:16},{x:13,y:16},{x:14,y:16},{x:14,y:17},
-  ],
+const INITIAL_P2 = {
+  score: 0,
+  snake: [{x:25,y:14},{x:26,y:14},{x:27,y:14}],
+  apple: { x: 15, y: 14 },
+  wall: [],
 };
 
 function roundRect(ctx, x, y, w, h, r) {
@@ -160,16 +146,18 @@ function GameBoard({ playerName, colorKey, score, state }) {
   );
 }
 
-const END_STATE = {
-  winner: 'David',
-  players: [
-    { name: 'David', colorKey: 'purple', score: 30 },
-    { name: 'Alex',  colorKey: 'teal',   score: 21 },
-  ],
-};
+function makeEndState(p1Name, p2Name) {
+  return {
+    winner: p1Name,
+    players: [
+      { name: p1Name, colorKey: 'purple', score: 30 },
+      { name: p2Name, colorKey: 'teal',   score: 21 },
+    ],
+  };
+}
 
-function EndGameOverlay() {
-  const { winner, players } = END_STATE;
+function EndGameOverlay({ endState }) {
+  const { winner, players } = endState;
   return (
     <div className="endgame-backdrop">
       <div className="endgame-card">
@@ -210,7 +198,11 @@ function EndGameOverlay() {
 }
 
 function GamePage() {
-  const gameOver = true;
+  const location = useLocation();
+  const username = location.state?.username || 'Player';
+  const p2Name = 'Bot';
+  const gameOver = false;
+  const endState = makeEndState(username, p2Name);
 
   return (
     <div className="game-container">
@@ -235,8 +227,8 @@ function GamePage() {
 
       <main className={`game-main${gameOver ? ' game-main--dimmed' : ''}`}>
         <div className="boards-row">
-          <GameBoard playerName="David" colorKey="purple" score={P1_STATE.score} state={P1_STATE} />
-          <GameBoard playerName="Alex"  colorKey="teal"   score={P2_STATE.score} state={P2_STATE} />
+          <GameBoard playerName={username} colorKey="purple" score={INITIAL_P1.score} state={INITIAL_P1} />
+          <GameBoard playerName={p2Name}   colorKey="teal"   score={INITIAL_P2.score} state={INITIAL_P2} />
         </div>
 
         <div className="legend">
@@ -261,7 +253,7 @@ function GamePage() {
         <p className="credit">created by David Kaplun</p>
       </main>
 
-      {gameOver && <EndGameOverlay />}
+      {gameOver && <EndGameOverlay endState={endState} />}
     </div>
   );
 }
