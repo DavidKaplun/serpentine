@@ -117,33 +117,110 @@ function GameBoard({ playerState, colorKey }) {
   );
 }
 
+function EndGameOverlay({ gameState, waitingRematch, onPlayAgain, onLobby }) {
+  const p1Color = '#9F99E8', p2Color = '#2DCB96';
+  return (
+    <div className="endgame-backdrop">
+      <div className="endgame-card">
+        <div className="endgame-header">
+          <div className="winner-icon">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M11 2l2.39 4.84 5.34.78-3.87 3.77.91 5.32L11 14.27l-4.77 2.44.91-5.32L3.27 7.62l5.34-.78L11 2z"
+                fill="white" opacity="0.95"/>
+            </svg>
+          </div>
+          <p className="winner-label">WINNER</p>
+          <p className="winner-name">{gameState.winner ?? 'Draw'}</p>
+        </div>
+
+        <div className="endgame-body">
+          <div className="scores-row">
+            <div className="score-col">
+              <div className="score-col-player">
+                <span className="player-dot" style={{ background: p1Color }} />
+                <span className="score-col-name">{gameState.p1.name}</span>
+              </div>
+              <span className="score-col-value" style={{ color: p1Color }}>{gameState.p1.score}</span>
+              <span className="score-col-label">FINAL SCORE</span>
+            </div>
+            <div className="score-col">
+              <div className="score-col-player">
+                <span className="player-dot" style={{ background: p2Color }} />
+                <span className="score-col-name">{gameState.p2.name}</span>
+              </div>
+              <span className="score-col-value" style={{ color: p2Color }}>{gameState.p2.score}</span>
+              <span className="score-col-label">FINAL SCORE</span>
+            </div>
+          </div>
+
+          {waitingRematch ? (
+            <button className="back-lobby-btn" disabled style={{ cursor: 'default', opacity: 0.55 }}>
+              Waiting for opponent…
+            </button>
+          ) : (
+            <button className="play-again-btn" onClick={onPlayAgain}>Play again</button>
+          )}
+          <button className="back-lobby-btn" onClick={onLobby}>Back to lobby</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MultiplayerGamePage() {
   const location = useLocation();
-  const navigate = useNavigate();
-  const username  = location.state?.username  || 'Player';
-  const yourRole  = location.state?.yourRole  || 'p1';
+  const navigate  = useNavigate();
+  const username  = location.state?.username || 'Player';
+  const yourRole  = location.state?.yourRole || 'p1';
 
-  const [gameState, setGameState] = useState(location.state?.gameState ?? null);
+  const [gameState,      setGameState]      = useState(location.state?.gameState ?? null);
+  const [waitingRematch, setWaitingRematch] = useState(false);
+  const socketRef = useRef(null);
 
   useEffect(() => {
     const socket = getSocket();
-    socket.on('game_state', (state) => setGameState(state));
-    socket.on('opponent_disconnected', () => {
-      setGameState(prev => prev ? { ...prev, gameOver: true, winner: username } : prev);
+    socketRef.current = socket;
+
+    socket.on('game_state', (state) => {
+      setGameState(state);
+      if (!state.gameOver) setWaitingRematch(false);
     });
+
+    socket.on('opponent_disconnected', () => {
+      setWaitingRematch(false);
+      setGameState(prev => {
+        if (!prev || prev.gameOver) return prev;
+        return { ...prev, gameOver: true, winner: username };
+      });
+    });
+
     return () => {
       socket.off('game_state');
       socket.off('opponent_disconnected');
-      disconnectSocket();
     };
   }, [username]);
+
+  useEffect(() => {
+    const keyMap = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+    const onKey = (e) => {
+      const dir = keyMap[e.key];
+      if (dir) { e.preventDefault(); socketRef.current?.emit('player_move', { direction: dir }); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const handlePlayAgain = () => {
+    socketRef.current?.emit('play_again');
+    setWaitingRematch(true);
+  };
 
   const handleLobby = () => {
     disconnectSocket();
     navigate('/lobby', { state: { username } });
   };
 
-  // Always show the local player on the left (purple) and the opponent on the right (teal)
+  const gameOver   = gameState?.gameOver ?? false;
   const leftState  = yourRole === 'p1' ? gameState?.p1 : gameState?.p2;
   const rightState = yourRole === 'p1' ? gameState?.p2 : gameState?.p1;
 
@@ -162,10 +239,13 @@ export default function MultiplayerGamePage() {
           </svg>
           <span className="header-logo-text">SERPENTINE</span>
         </div>
-        <div className="live-badge"><span className="live-dot" />LIVE</div>
+        {gameOver
+          ? <div className="ended-badge">ENDED</div>
+          : <div className="live-badge"><span className="live-dot" />LIVE</div>
+        }
       </header>
 
-      <main className="game-main">
+      <main className={`game-main${gameOver ? ' game-main--dimmed' : ''}`}>
         <div className="boards-row">
           <GameBoard playerState={leftState}  colorKey="purple" />
           <GameBoard playerState={rightState} colorKey="teal"   />
@@ -178,10 +258,17 @@ export default function MultiplayerGamePage() {
           <div className="legend-item"><span className="legend-swatch legend-wall"  /><span>wall</span></div>
         </div>
 
-        <button className="back-lobby-btn" style={{ marginTop: 4 }} onClick={handleLobby}>← back to lobby</button>
-
         <p className="credit">created by David Kaplun</p>
       </main>
+
+      {gameOver && gameState && (
+        <EndGameOverlay
+          gameState={gameState}
+          waitingRematch={waitingRematch}
+          onPlayAgain={handlePlayAgain}
+          onLobby={handleLobby}
+        />
+      )}
     </div>
   );
 }
