@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const { createGame, tickGame, setPlayerDirection, resetGame } = require('./game');
+const { registerOnlineSocket } = require('./onlinegame');
 
 const app = express();
 const server = http.createServer(app);
@@ -21,6 +22,7 @@ function buildState(game) {
 
 io.on('connection', (socket) => {
   console.log('connected:', socket.id);
+  registerOnlineSocket(socket);
 
   socket.on('join_bot_game', ({ username }) => {
     // Clean up any previous session

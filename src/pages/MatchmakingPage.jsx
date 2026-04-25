@@ -1,10 +1,33 @@
+import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { getSocket } from '../socket';
 import './MatchmakingPage.css';
 
 function MatchmakingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const username = location.state?.username || 'Player';
+
+  useEffect(() => {
+    const socket = getSocket();
+    socket.emit('join_matchmaking', { username });
+
+    socket.on('match_found', ({ state, yourRole }) => {
+      navigate('/multiplayer-game', { state: { username, gameState: state, yourRole } });
+    });
+
+    return () => {
+      socket.emit('leave_matchmaking');
+      socket.off('match_found');
+    };
+  }, [username, navigate]);
+
+  const handleCancel = () => {
+    const socket = getSocket();
+    socket.emit('leave_matchmaking');
+    socket.off('match_found');
+    navigate('/lobby', { state: { username } });
+  };
 
   return (
     <div className="mm-container">
@@ -56,7 +79,7 @@ function MatchmakingPage() {
           Playing as <strong>{username}</strong>
         </div>
 
-        <button className="cancel-btn" onClick={() => navigate('/lobby', { state: { username } })}>← cancel</button>
+        <button className="cancel-btn" onClick={handleCancel}>← cancel</button>
 
         <p className="credit">created by David Kaplun</p>
       </div>

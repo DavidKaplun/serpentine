@@ -3,6 +3,7 @@ import WelcomePage from './pages/WelcomePage';
 import LobbyPage from './pages/LobbyPage';
 import GamePage from './pages/GamePage';
 import MatchmakingPage from './pages/MatchmakingPage';
+import MultiplayerGamePage from './pages/MultiplayerGamePage';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route path="/lobby" element={<LobbyPage />} />
         <Route path="/game" element={<GamePage />} />
         <Route path="/matchmaking" element={<MatchmakingPage />} />
+        <Route path="/multiplayer-game" element={<MultiplayerGamePage />} />
       </Routes>
     </BrowserRouter>
   );
