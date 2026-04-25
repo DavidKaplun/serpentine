@@ -4,7 +4,7 @@ let socket = null;
 
 export function getSocket() {
   if (!socket) {
-    socket = io('http://localhost:3001');
+    socket = io('http://51.85.81.11:3001');
   }
   return socket;
 }
