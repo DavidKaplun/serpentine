@@ -168,56 +168,33 @@ function generateWall(snake, apple) {
 
 function tryBuildWall(snake, apple) {
   const head = snake[0];
-  const dx = apple.x - head.x;
-  const dy = apple.y - head.y;
-
-  const wallType = Math.abs(dx) > Math.abs(dy)
-    ? (dx > 0 ? 'right' : 'left')
-    : (dy > 0 ? 'down'  : 'up');
-
-  let pos = (wallType === 'up' || wallType === 'right')
-    ? { x: apple.x + 2, y: apple.y - 2 }
-    : { x: apple.x - 2, y: apple.y + 2 };
-
-  pos.x = Math.max(1, Math.min(COLS - 2, pos.x));
-  pos.y = Math.max(1, Math.min(ROWS - 2, pos.y));
-
-  const buildDir = { up: 'left', down: 'right', left: 'up', right: 'down' }[wallType];
-  const VECS = {
-    left:  [{ x:-1,y:0 }, { x:-1,y:-1 }, { x:-1,y:1 }],
-    right: [{ x:1, y:0 }, { x:1, y:-1 }, { x:1, y:1 }],
-    up:    [{ x:0,y:-1 }, { x:-1,y:-1 }, { x:1, y:-1}],
-    down:  [{ x:0,y:1  }, { x:-1,y:1  }, { x:1, y:1 }],
-  };
-  const vecs = VECS[buildDir];
-  const length = 4 + Math.floor(Math.random() * 4);
+  const dx = apple.x - head.x; // positive = apple is right of snake
+  const dy = apple.y - head.y; // positive = apple is below snake
 
   const snakeSet = new Set(snake.map(s => `${s.x},${s.y}`));
   const appleKey = `${apple.x},${apple.y}`;
-  const wall = [];
-  const wallSet = new Set();
-  let cur = { ...pos };
+  const length = 4 + Math.floor(Math.random() * 4);
+  const half = Math.floor(length / 2);
+  const candidates = [];
 
-  for (let i = 0; i < length; i++) {
-    const key = `${cur.x},${cur.y}`;
-    if (cur.x < 0 || cur.x >= COLS || cur.y < 0 || cur.y >= ROWS) break;
-    if (snakeSet.has(key) || key === appleKey || wallSet.has(key)) break;
-    wall.push({ ...cur });
-    wallSet.add(key);
-
-    // Prefer straight, occasionally diagonal
-    const ordered = Math.random() < 0.65 ? vecs : [vecs[1 + Math.floor(Math.random() * 2)], vecs[0]];
-    let moved = false;
-    for (const v of ordered) {
-      const next = { x: cur.x + v.x, y: cur.y + v.y };
-      const nk = `${next.x},${next.y}`;
-      if (next.x >= 0 && next.x < COLS && next.y >= 0 && next.y < ROWS
-          && !snakeSet.has(nk) && nk !== appleKey && !wallSet.has(nk)) {
-        cur = next; moved = true; break;
-      }
+  if (Math.abs(dy) >= Math.abs(dx)) {
+    // Snake is above or below the apple → horizontal wall
+    const wallY = dy > 0 ? apple.y - 2 : apple.y + 2; // same side as snake
+    for (let i = -half; i < -half + length; i++) {
+      candidates.push({ x: apple.x + i, y: wallY });
     }
-    if (!moved) break;
+  } else {
+    // Snake is left or right of the apple → vertical wall
+    const wallX = dx > 0 ? apple.x - 2 : apple.x + 2; // same side as snake
+    for (let i = -half; i < -half + length; i++) {
+      candidates.push({ x: wallX, y: apple.y + i });
+    }
   }
+
+  const wall = candidates.filter(({ x, y }) => {
+    const key = `${x},${y}`;
+    return x >= 0 && x < COLS && y >= 0 && y < ROWS && !snakeSet.has(key) && key !== appleKey;
+  });
 
   return wall.length >= 4 ? wall : null;
 }
