@@ -181,7 +181,7 @@ export default function GamePage() {
 
   // Connect socket and join game
   useEffect(() => {
-    const socket = io('http://localhost:3001');
+    const socket = io('https://api.serpentineapp.com');
     socketRef.current = socket;
     socket.emit('join_bot_game', { username });
     socket.on('game_state', (state) => setGameState(state));
