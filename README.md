@@ -1,70 +1,31 @@
-# Getting Started with Create React App
+# Serpentine
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A multiplayer browser Snake game with an A\*-pathfinding AI opponent and real-time online matchmaking.
 
-## Available Scripts
+## Demo
 
-In the project directory, you can run:
+📹 **[Demo video — link to be added]**
 
-### `npm start`
+🔗 **Live:** https://serpentineapp.com/
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Stack
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- **Frontend:** React, React Router, Socket.io-client
+- **Backend:** Node.js, Express, Socket.io
+- **Infra:** AWS (EC2), S3 + CloudFront (frontend hosting)
 
-### `npm test`
+## Architecture
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+The React client renders the board and streams player input over Socket.io to an authoritative Node.js/Express server that owns the game state, advances it on a fixed tick, and broadcasts each frame back to the clients. Single-player pits you against a bot that navigates with A\* pathfinding; multiplayer pairs two players through a matchmaking queue into a shared room.
 
-### `npm run build`
+## Key decisions
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- **Server-authoritative game loop** — the server holds the single source of truth for game state and steps it on a fixed tick (~130ms), broadcasting to clients that only render and send input. This keeps both players in sync and prevents client-side divergence or cheating.
+- **A\* pathfinding for the AI opponent** — the bot computes a shortest path to the apple using A\* with a Manhattan-distance heuristic, recomputing when a new apple spawns and falling back to a safe move when no path exists.
+- **Reachability-guaranteed wall generation** — every apple spawns alongside procedurally placed walls, but a breadth-first search verifies the apple is still reachable before the walls are committed, so obstacles never make a round unwinnable.
+- **Socket.io matchmaking** — players join a queue and are paired into isolated rooms, each running its own game loop, for real-time head-to-head play.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Known limitations / next steps
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- **No accounts or persistent scores** — there's no login or saved leaderboard; results live only for the duration of a match. Next step: add accounts and a persistent leaderboard.
+- **No reconnection handling** — if a player drops mid-match, the game ends immediately for both. Next step: add a brief reconnect grace window.
