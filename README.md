@@ -4,7 +4,11 @@ A multiplayer browser Snake game with an A\*-pathfinding AI opponent and real-ti
 
 ## Demo
 
-📹 **[Demo video — link to be added]**
+
+
+https://github.com/user-attachments/assets/8d9c8128-f731-4e4b-b516-bab383757b98
+
+
 
 🔗 **Live:** [https://serpentineapp.com/](https://www.serpentineapp.com/)
 
